@@ -1,0 +1,185 @@
+version: "3"
+
+networks:
+ xnetwork:
+  driver: bridge
+
+services:
+
+  #######################################
+  # Postgres: Database Principal Compartilhado entre os serviços
+  #######################################
+  database:
+    image: postgres:9.6
+    container_name: database
+    restart: always
+    networks:
+      - xnetwork
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "kong"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./postgresDatabase:/var/lib/postgresql/data
+
+  #######################################
+  # Kong database migration
+  #######################################
+  kong-migration:
+    image: kong:latest
+    command: "kong migrations bootstrap"
+    networks:
+      - xnetwork
+    restart: on-failure
+    environment:
+      KONG_PG_HOST: database
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong
+    links:
+      - database
+    depends_on:
+      - database
+
+  #######################################
+  # Kong: The API Gateway
+  #######################################
+  kong:
+    image: kong:latest
+    restart: always
+    networks:
+      - xnetwork
+    environment:
+      KONG_PG_HOST: database
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong
+      KONG_PROXY_LISTEN: 0.0.0.0:8000
+      KONG_PROXY_LISTEN_SSL: 0.0.0.0:8443
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+    depends_on:
+      - kong-migration
+      - database
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://kong:8001"]
+      interval: 5s
+      timeout: 2s
+      retries: 15
+    ports:
+      - "8001:8001"
+      - "8000:8000"
+
+  #######################################
+  # Konga database prepare
+  #######################################
+  konga-prepare:
+    image: pantsel/konga:next
+    command: "-c prepare -a postgres -u postgresql://kong:kong@database:5432/konga_db"
+    networks:
+      - xnetwork
+    restart: on-failure
+    links:
+      - database
+    depends_on:
+      - database
+
+  #######################################
+  # Konga: Kong GUI                     #
+  #######################################
+  konga:
+    image: pantsel/konga:next
+    restart: always
+    networks:
+        - xnetwork
+    environment:
+      DB_ADAPTER: postgres
+      DB_HOST: database
+      DB_USER: kong
+      DB_PASSWORD: kong
+      TOKEN_SECRET: km1GUr4RkcQD7DewhJPNXrCuZwcKmqjb
+      DB_DATABASE: konga_db
+      NODE_ENV: development
+    depends_on:
+      - database
+      - kong
+    ports:
+      - "1337:1337"
+
+  #######################################
+  # Adminer: Gerenciador de Banco de Dados
+  #######################################
+  adminer:
+    image: adminer
+    restart: always
+    networks:
+      - xnetwork
+    ports:
+      - 8081:8080
+      
+  #######################################
+  # Portainer: Gerenciador de Containers#
+  #######################################
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    restart: always
+    container_name: portainer
+    ports:
+      - 8005:8005
+      - 9443:9443
+      - 9000:9000
+    networks:
+      - xnetwork
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./portainer_data:/data
+
+  #######################################
+  # keycloak: Autenticação e autorização#
+  #######################################
+
+  keycloak:
+    image: jboss/keycloak:15.0.0
+    environment:
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=admin
+      - DB_VENDOR=h2
+    ports:
+      - 8080:8080
+
+  app:
+    build: ./nest
+    entrypoint: dockerize -wait tcp://db:3306 -timeout 40s ./entrypoint.sh
+    ports:
+      - 3000:3000
+    volumes:
+      - ./nest:/home/node/app
+    extra_hosts: 
+      - "host.docker.internal:172.17.0.1"
+    depends_on: 
+      - db
+
+  db:
+    build: ./nest/.docker/mysql
+    restart: always
+    tty: true
+    volumes:
+      - ./nest/docker/dbdata:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=fin
+      - MYSQL_ROOT_PASSWORD=root
+
+  next:
+    build: ./next.js
+    entrypoint: ./entrypoint.sh
+    ports:
+      - 3001:3000
+    volumes:
+      - ./next.js:/home/node/app
+    extra_hosts: 
+      - "host.docker.internal:172.17.0.1"
