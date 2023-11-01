@@ -23,8 +23,8 @@ wsl --install
 Para acessar os diretórios no VSCode, Clique no canto inferior esquerdo no símbolo: >< e abrirá um dropbox com a opção "Conectar ao WSL".<br>
 4. Após Conectado, adicione a pasta ao workspace do VSCode "/home/seuUsuario", crie uma pasta dentro dela com: 
 ```
-mkdir novapasta`
-``
+mkdir novapasta
+```
 5. Abra o shell do ubuntu já no vscode e Instale o docker engine com o seguinte passo a passo:
 ```
 sudo apt-get update
