@@ -70,6 +70,7 @@ cd projetox3
 7. app: Aplicação Backend em NestJS: ```http://localhost:3000```
 8. db: Banco Mysql para o Backend: ```http://localhost:3306```
 9. next: Aplicação Frontend em NextJS: ```http://localhost:3001```
+* Os containers "kong-migration" e "konga-prepare" são executados somente uma vez e são finalizados(Status: exited) pois são apenas scripts de criação de tabelas no banco postgres.
 
 ## Subindo as Aplicações:
 1. Suba os containers com: 
@@ -85,12 +86,13 @@ http://localhost:8080
 5. Crie um usuário no menu Users atribuindo nome, email, username, etc. Após criá-lo, vá até a aba Credentials e atribua uma senha para o mesmo desmarcando a opção "Set Temporary'.
 6. Copie chave secreta gerada na aba credentials no cliente nest e insira na propriedade "client_secret" em /nest/src/auth/auth/auth.service.ts
 7. Copie a chave RSA em Realm Settings(RS256 SIG Public Key) e colar na propriedade JWT_SECRET nos arquivos EL/Projeto_X_3/nest/.env e EL/Projeto_X_3/next.js/.env.local <br>
-* Atenção: A chave deve estar entre as strings:-----BEGIN PUBLIC KEY-----\n**COLARCHAVEAQUI**\n-----END PUBLIC KEY-----
+* Atenção: A chave deve estar entre as strings:<br>
+-----BEGIN PUBLIC KEY-----\n<mark>COLARCHAVEAQUI<mark>\n-----END PUBLIC KEY-----
 8. Acesse o Portainer em: 
 ```
 http://localhost:9000
 ```
-* Remova os containers app e next. Em seguida vá novamente ao terminal e digite novamente: 
+* Remova os containers "app" e "next". Em seguida vá novamente ao terminal e digite novamente: 
 ```
 docker compose up -d
 ```
@@ -99,6 +101,7 @@ docker compose up -d
 http://localhost:3001/private
 ```
 * O mesmo redirecionará para a tela de login do keycloak onde ao efetuar login com o usuário criado, a tela deverá exibir: "Autenticado com sucesso com keycloak" onde "sucesso com keycloak" é uma string enviada por uma rota também protegida pelo keycloak do backend em nestJS.
+* Para Deslogar pode-se pressionar F12, ir na aba "Application", em "Cookies" e em ```http://localhost:3001```, em seguida, apagar todos os cookies armazenados para este endereço. Para encerrar a sessão no keycloak, pode-se ir no painel de administração do keycloak, em "Sessions" e em "Logout All" no canto superior direito.
 10. Para adicionar a autenticação com Google ou qualquer outro provedor de identidade, acesse o menu "Identity Providers" e em "Add Provider" selecione Google ou qualquer outro serviço, então digite as credenciais em "Cliend ID" e "Client Secret". Após Adicionar, a opção de login com google aparecerá na tela de Login. Lembrando que para esta opção funcionar corretamente, a rota da sua aplicação keycloak "localhost:8080" deverá estar exposta a um endereço externo(para teste pode-se utilizar o ngrok). E este endereço externo deve ser adicionado no provedor(Google,etc) como "Valid Redirects URIs" para que o mesmo autorize a requisição da sua aplicação.
 11. Qualquer erro gerado pelos containers durante esta etapa de configuração pode ser visualizado no Portainer nos Logs do Container.
 
@@ -113,5 +116,9 @@ admkonga <br>
 an7TzwSU1adkOBye <br>
 
 * keycloak:<br>
+admin <br>
+admin <br>
+
+* postgres:<br>
 admin <br>
 admin <br>
