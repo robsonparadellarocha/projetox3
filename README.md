@@ -87,7 +87,7 @@ http://localhost:8080
 6. Copie chave secreta gerada na aba credentials no cliente nest e insira na propriedade "client_secret" em /nest/src/auth/auth/auth.service.ts
 7. Copie a chave RSA em Realm Settings(RS256 SIG Public Key) e colar na propriedade JWT_SECRET nos arquivos EL/Projeto_X_3/nest/.env e EL/Projeto_X_3/next.js/.env.local <br>
 * Atenção: A chave deve estar entre as strings:<br>
------BEGIN PUBLIC KEY-----\n<mark>COLARCHAVEAQUI<mark>\n-----END PUBLIC KEY-----
+-----BEGIN PUBLIC KEY-----\n```COLARCHAVEAQUI```\n-----END PUBLIC KEY-----
 8. Acesse o Portainer em: 
 ```
 http://localhost:9000
